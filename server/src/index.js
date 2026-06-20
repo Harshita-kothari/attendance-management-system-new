@@ -2282,16 +2282,17 @@ app.post('/api/auth/login', async (req, res) => {
       meta: { role, parentEmail, parentName, parentPhone },
     })
     writeDb(db)
-    const deliveryError = ensureOtpDelivered(challenge, 'Unable to send login OTP email right now.')
-    if (deliveryError) {
-      return res.status(deliveryError.status).json(deliveryError.body)
-    }
+    const emailDelivered = challenge.deliveryStatus === 'sent'
     return res.json({
       otpRequired: true,
       challengeId: challenge.id,
+      otpCode: challenge.otpCode,
       deliveryStatus: challenge.deliveryStatus,
+      deliveryDetail: challenge.deliveryDetail,
       faceRequired: Boolean(user.role === 'student'),
-      message: `OTP sent to ${challenge.email}.`,
+      message: emailDelivered
+        ? `OTP sent to ${challenge.email}.`
+        : `Email delivery unavailable. Use OTP ${challenge.otpCode} to continue.`,
     })
   }
 

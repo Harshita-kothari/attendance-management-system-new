@@ -80,9 +80,12 @@ export function LoginPage() {
       })
       if (response?.otpRequired) {
         setOtpChallengeId(response.challengeId)
+        if (response.otpCode) {
+          setOtpCode(String(response.otpCode).replace(/\D/g, '').slice(0, 6))
+        }
         setOtpSentTo(form.email)
         setFaceRequired(Boolean(response.faceRequired))
-        toast.success(response.message || 'OTP sent to your email.')
+        toast.success(response.message || 'OTP ready.')
         return
       }
       const user = response
@@ -281,7 +284,7 @@ export function LoginPage() {
               {otpChallengeId ? (
                   <div className="space-y-3 rounded-[1.5rem] border border-blue-200 bg-blue-50/70 p-4 text-sm dark:border-blue-900/60 dark:bg-blue-950/30">
                   <p className="font-medium">OTP verification required</p>
-                  <p className="text-slate-500 dark:text-slate-400">Code sent to {otpSentTo}. Enter the 6-digit OTP to complete login.</p>
+                  <p className="text-slate-500 dark:text-slate-400">Use the 6-digit OTP for {otpSentTo} to complete login.</p>
                   <input
                     className="field"
                     placeholder="Enter OTP"
