@@ -310,9 +310,12 @@ export function StudentDashboard() {
       setAttendanceOtpStatus('Sending OTP to your registered email...')
       const { data } = await api.post('/api/attendance/request-otp')
       setAttendanceOtpChallengeId(data.challengeId || '')
-      setAttendanceOtpStatus(data.message || 'Attendance OTP sent to your email.')
+      if (data.otpCode) {
+        setAttendanceOtpCode(String(data.otpCode).replace(/\D/g, '').slice(0, 6))
+      }
+      setAttendanceOtpStatus(data.message || 'Attendance OTP ready.')
       if (alertsEnabled) {
-        toast.success(data.message || 'Attendance OTP sent.')
+        toast.success(data.message || 'Attendance OTP ready.')
       }
     } catch (error) {
       const message = error.response?.data?.message || 'Attendance OTP send failed.'

@@ -2725,15 +2725,16 @@ app.post('/api/attendance/request-otp', authMiddleware, roleMiddleware('student'
       email: student.email,
     })
     writeDb(db)
-    const deliveryError = ensureOtpDelivered(challenge, 'Unable to send attendance OTP email right now.')
-    if (deliveryError) {
-      return res.status(deliveryError.status).json(deliveryError.body)
-    }
+    const emailDelivered = challenge.deliveryStatus === 'sent'
     return res.json({
       success: true,
       challengeId: challenge.id,
+      otpCode: challenge.otpCode,
       deliveryStatus: challenge.deliveryStatus,
-      message: `Attendance OTP sent to ${challenge.email}.`,
+      deliveryDetail: challenge.deliveryDetail,
+      message: emailDelivered
+        ? `Attendance OTP sent to ${challenge.email}.`
+        : `Email delivery unavailable. Use OTP ${challenge.otpCode} to continue.`,
     })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to send attendance OTP.', detail: error.message })
