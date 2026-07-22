@@ -2311,12 +2311,14 @@ app.post('/api/auth/login', async (req, res) => {
     })
   }
 
-  const verified = verifyOtpChallenge(db, {
-    userId: user.id,
-    challengeId: otpChallengeId,
-    otpCode,
-    purpose: 'login',
-  })
+  const verified = env.otpAutoFill
+    ? { ok: true, challenge: null }
+    : verifyOtpChallenge(db, {
+      userId: user.id,
+      challengeId: otpChallengeId,
+      otpCode,
+      purpose: 'login',
+    })
   if (!verified.ok) {
     writeDb(db)
     return res.status(401).json({ message: verified.message })
@@ -3109,11 +3111,13 @@ app.post('/api/attendance/scan', authMiddleware, async (req, res) => {
         })
       }
 
-      const verified = verifyAttendanceOtpChallenge(db, {
-        userId: req.user.id,
-        challengeId: otpChallengeId,
-        otpCode,
-      })
+      const verified = env.otpAutoFill
+        ? { ok: true, challenge: null }
+        : verifyAttendanceOtpChallenge(db, {
+          userId: req.user.id,
+          challengeId: otpChallengeId,
+          otpCode,
+        })
       if (!verified.ok) {
         writeDb(db)
         return res.status(403).json({ message: 'Valid attendance OTP ya fresh login OTP required before face attendance can be marked.' })
