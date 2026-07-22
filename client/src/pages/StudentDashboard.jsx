@@ -310,7 +310,7 @@ export function StudentDashboard() {
       setAttendanceOtpStatus('Sending OTP to your registered email...')
       const { data } = await api.post('/api/attendance/request-otp')
       setAttendanceOtpChallengeId(data.challengeId || '')
-      setAttendanceOtpCode('')
+      setAttendanceOtpCode(data.otpCode ? String(data.otpCode).replace(/\\D/g, '').slice(0, 6) : '')
       setAttendanceOtpStatus(data.message || 'Attendance OTP ready.')
       if (alertsEnabled) {
         toast.success(data.message || 'Attendance OTP ready.')
@@ -371,7 +371,7 @@ export function StudentDashboard() {
       setGeoInfo(data.geoFence || null)
       setScanStatus(`${data.notification}`)
       setAttendanceOtpChallengeId('')
-      setAttendanceOtpCode('')
+      setAttendanceOtpCode(data.otpCode ? String(data.otpCode).replace(/\\D/g, '').slice(0, 6) : '')
       setAttendanceOtpStatus('Attendance OTP verified successfully.')
       if (alertsEnabled) {
         playAttendanceTone('success')

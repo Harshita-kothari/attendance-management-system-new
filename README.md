@@ -65,6 +65,8 @@ Student login OTPs are sent only when an email provider is configured. In the ba
 
 For Render, open the `faceattendance-backend` service, add these values under **Environment**, then manually redeploy the service. Do not place provider keys in `.env.example` or commit them to GitHub. If a provider is not configured or rejects the sender, the app now shows an email-delivery error instead of revealing the OTP in the browser.
 
+Demo mode is enabled by default: OTP_AUTO_FILL=true returns and auto-fills an OTP in the browser without sending email. Set OTP_AUTO_FILL=false only when you configure a real email provider for production.
+
 ### 3. Face API
 
 ```bash

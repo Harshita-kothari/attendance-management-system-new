@@ -39,6 +39,7 @@ const env = {
   smtpUser: process.env.SMTP_USER || '',
   smtpPass: process.env.SMTP_PASS || '',
   smtpFromEmail: process.env.SMTP_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || '',
+  otpAutoFill: process.env.OTP_AUTO_FILL !== 'false',
 }
 
 function createDefaultDb() {
@@ -1645,12 +1646,14 @@ async function createOtpChallenge(db, { user, purpose, email, meta = {} }) {
       <p>This code will expire in 10 minutes.</p>
     </div>
   `
-  const delivery = await dispatchEmail({
-    to: challenge.email,
-    subject,
-    html,
-    text: `${subject}: ${otpCode}. This code expires in 10 minutes.`,
-  })
+  const delivery = env.otpAutoFill
+    ? { status: 'auto-filled', detail: 'Demo OTP was returned to the browser without sending an email.' }
+    : await dispatchEmail({
+      to: challenge.email,
+      subject,
+      html,
+      text: `${subject}: ${otpCode}. This code expires in 10 minutes.`,
+    })
 
   challenge.deliveryStatus = delivery.status
   challenge.deliveryDetail = delivery.detail
@@ -1658,7 +1661,7 @@ async function createOtpChallenge(db, { user, purpose, email, meta = {} }) {
 }
 
 function ensureOtpDelivered(challenge, fallbackMessage) {
-  if (challenge?.deliveryStatus === 'sent') {
+  if (challenge?.deliveryStatus === 'sent' || challenge?.deliveryStatus === 'auto-filled') {
     return null
   }
 
@@ -2300,9 +2303,10 @@ app.post('/api/auth/login', async (req, res) => {
     return res.json({
       otpRequired: true,
       challengeId: challenge.id,
+      otpCode: env.otpAutoFill ? challenge.otpCode : undefined,
       deliveryStatus: challenge.deliveryStatus,
       faceRequired: Boolean(user.role === 'student'),
-      message: `OTP sent to ${challenge.email}.`,
+      message: challenge.deliveryStatus === 'auto-filled' ? 'Demo OTP filled automatically.' : `OTP sent to ${challenge.email}.`,
     })
   }
 
@@ -2760,8 +2764,9 @@ app.post('/api/attendance/request-otp', authMiddleware, roleMiddleware('student'
     return res.json({
       success: true,
       challengeId: challenge.id,
+      otpCode: env.otpAutoFill ? challenge.otpCode : undefined,
       deliveryStatus: challenge.deliveryStatus,
-      message: `Attendance OTP sent to ${challenge.email}.`,
+      message: challenge.deliveryStatus === 'auto-filled' ? 'Demo attendance OTP filled automatically.' : `Attendance OTP sent to ${challenge.email}.`,
     })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to send attendance OTP.', detail: error.message })

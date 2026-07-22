@@ -80,7 +80,7 @@ export function LoginPage() {
       })
       if (response?.otpRequired) {
         setOtpChallengeId(response.challengeId)
-        setOtpCode('')
+        setOtpCode(response.otpCode ? String(response.otpCode).replace(/\\D/g, '').slice(0, 6) : '')
         setOtpSentTo(form.email)
         setFaceRequired(Boolean(response.faceRequired))
         toast.success(response.message || 'OTP ready.')

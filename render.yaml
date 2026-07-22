@@ -46,6 +46,8 @@ services:
         sync: false
       - key: SMTP_FROM_EMAIL
         sync: false
+      - key: OTP_AUTO_FILL
+        value: true
   - type: web
     name: faceattendance-face-api
     runtime: python
