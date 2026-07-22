@@ -1622,6 +1622,7 @@ function cleanupOtpChallenges(db) {
 async function createOtpChallenge(db, { user, purpose, email, meta = {} }) {
   cleanupOtpChallenges(db)
   const otpCode = generateOtpCode()
+  const otpLifetimeMs = env.otpAutoFill ? 24 * 60 * 60 * 1000 : 10 * 60 * 1000
   const challenge = {
     id: createId('otp'),
     userId: user.id,
@@ -1630,7 +1631,7 @@ async function createOtpChallenge(db, { user, purpose, email, meta = {} }) {
     otpCode,
     meta,
     createdAt: new Date().toISOString(),
-    expiresAt: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    expiresAt: new Date(Date.now() + otpLifetimeMs).toISOString(),
     usedAt: null,
   }
 
