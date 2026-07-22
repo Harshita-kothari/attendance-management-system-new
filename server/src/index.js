@@ -294,6 +294,7 @@ async function dispatchEmail({ to, subject, html, text }) {
     return { status: 'failed', detail: 'Recipient email is required.' }
   }
 
+  let resendFailure = ''
   if (env.resendApiKey && env.resendFromEmail) {
     try {
       await axios.post(
@@ -314,7 +315,7 @@ async function dispatchEmail({ to, subject, html, text }) {
       )
       return { status: 'sent', detail: `Email sent to ${to}.` }
     } catch (error) {
-      // fall through to SMTP
+      resendFailure = error.response?.data?.message || error.response?.data?.error?.message || error.message
     }
   }
 
@@ -343,11 +344,18 @@ async function dispatchEmail({ to, subject, html, text }) {
       })
       return { status: 'sent', detail: `SMTP email sent to ${to}.` }
     } catch (error) {
-      return { status: 'failed', detail: error.message }
+      return { status: 'failed', detail: 'Email delivery failed: ' + error.message }
     }
   }
 
-  return { status: 'simulated', detail: 'No email provider configured. OTP saved in local database only.' }
+  if (resendFailure) {
+    return { status: 'failed', detail: 'Resend delivery failed: ' + resendFailure }
+  }
+
+  return {
+    status: 'failed',
+    detail: 'No email provider is configured. Set RESEND_API_KEY and RESEND_FROM_EMAIL, or SMTP_HOST, SMTP_USER, SMTP_PASS, and SMTP_FROM_EMAIL.',
+  }
 }
 
 async function dispatchParentAlert(notification) {
@@ -377,7 +385,7 @@ async function dispatchParentAlert(notification) {
       )
       return { status: 'sent', detail: `Email sent to ${notification.parentContact.email}.` }
     } catch (error) {
-      return { status: 'failed', detail: error.message }
+      return { status: 'failed', detail: 'Email delivery failed: ' + error.message }
     }
   }
 
@@ -413,7 +421,7 @@ async function dispatchParentAlert(notification) {
 
       return { status: 'sent', detail: `SMTP email sent to ${notification.parentContact.email}.` }
     } catch (error) {
-      return { status: 'failed', detail: error.message }
+      return { status: 'failed', detail: 'Email delivery failed: ' + error.message }
     }
   }
 
@@ -2282,17 +2290,19 @@ app.post('/api/auth/login', async (req, res) => {
       meta: { role, parentEmail, parentName, parentPhone },
     })
     writeDb(db)
-    const emailDelivered = challenge.deliveryStatus === 'sent'
+    const deliveryError = ensureOtpDelivered(
+      challenge,
+      'We could not send the login OTP email. Please try again later or contact the administrator.',
+    )
+    if (deliveryError) {
+      return res.status(deliveryError.status).json(deliveryError.body)
+    }
     return res.json({
       otpRequired: true,
       challengeId: challenge.id,
-      otpCode: challenge.otpCode,
       deliveryStatus: challenge.deliveryStatus,
-      deliveryDetail: challenge.deliveryDetail,
       faceRequired: Boolean(user.role === 'student'),
-      message: emailDelivered
-        ? `OTP sent to ${challenge.email}.`
-        : `Email delivery unavailable. Use OTP ${challenge.otpCode} to continue.`,
+      message: `OTP sent to ${challenge.email}.`,
     })
   }
 
@@ -2740,16 +2750,18 @@ app.post('/api/attendance/request-otp', authMiddleware, roleMiddleware('student'
       email: student.email,
     })
     writeDb(db)
-    const emailDelivered = challenge.deliveryStatus === 'sent'
+    const deliveryError = ensureOtpDelivered(
+      challenge,
+      'We could not send the attendance OTP email. Please try again later or contact the administrator.',
+    )
+    if (deliveryError) {
+      return res.status(deliveryError.status).json(deliveryError.body)
+    }
     return res.json({
       success: true,
       challengeId: challenge.id,
-      otpCode: challenge.otpCode,
       deliveryStatus: challenge.deliveryStatus,
-      deliveryDetail: challenge.deliveryDetail,
-      message: emailDelivered
-        ? `Attendance OTP sent to ${challenge.email}.`
-        : `Email delivery unavailable. Use OTP ${challenge.otpCode} to continue.`,
+      message: `Attendance OTP sent to ${challenge.email}.`,
     })
   } catch (error) {
     return res.status(500).json({ message: 'Unable to send attendance OTP.', detail: error.message })

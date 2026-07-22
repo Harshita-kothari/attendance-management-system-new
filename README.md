@@ -56,6 +56,15 @@ Required:
 - MongoDB running locally or a cloud URI in `MONGODB_URI`
 - `FACE_API_URL` should point to the Flask face service
 
+### OTP email delivery
+
+Student login OTPs are sent only when an email provider is configured. In the backend service environment, set **one** of these options:
+
+- **Resend (recommended):** `RESEND_API_KEY` and `RESEND_FROM_EMAIL`. The From address must use a domain verified in the Resend dashboard.
+- **SMTP:** `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURE`, `SMTP_USER`, `SMTP_PASS`, and `SMTP_FROM_EMAIL`.
+
+For Render, open the `faceattendance-backend` service, add these values under **Environment**, then manually redeploy the service. Do not place provider keys in `.env.example` or commit them to GitHub. If a provider is not configured or rejects the sender, the app now shows an email-delivery error instead of revealing the OTP in the browser.
+
 ### 3. Face API
 
 ```bash
