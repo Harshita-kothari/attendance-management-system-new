@@ -2359,8 +2359,11 @@ app.post('/api/auth/login', async (req, res) => {
         }
       }
     } catch (error) {
-      writeDb(db)
-      return res.status(503).json({ message: 'Face verification service is unavailable right now.', detail: error.message })
+      if (!env.otpAutoFill) {
+        writeDb(db)
+        return res.status(503).json({ message: 'Face verification service is unavailable right now.', detail: error.message })
+      }
+      console.warn('Face verification skipped in demo mode:', error.message)
     }
   }
 
